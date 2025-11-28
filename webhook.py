@@ -6,18 +6,22 @@ app = FastAPI()
 VERIFY_TOKEN = "thaya_verify_2025"
 
 @app.get("/webhook")
-def verify(
-    hub_mode: str = None,
-    hub_challenge: str = None,
-    hub_verify_token: str = None
-):
-    if hub_mode == "subscribe" and hub_verify_token == VERIFY_TOKEN:
-        return PlainTextResponse(content=hub_challenge, status_code=200)
-    return PlainTextResponse("Verification failed", status_code=403)
+async def verify(request: Request):
+    params = request.query_params
+
+    mode = params.get("hub.mode")
+    token = params.get("hub.verify_token")
+    challenge = params.get("hub.challenge")
+
+    if mode == "subscribe" and token == VERIFY_TOKEN:
+        return PlainTextResponse(content=challenge, status_code=200)
+
+    return PlainTextResponse(content="Forbidden", status_code=403)
 
 
 @app.post("/webhook")
-async def receive(request: Request):
-    body = await request.json()
-    print("📩 INCOMING:", body)
-    return {"status": "ok"}
+async def webhook_handler(request: Request):
+    data = await request.json()
+    print("📩 Incoming:", data)
+    return {"status": "received"}
+
